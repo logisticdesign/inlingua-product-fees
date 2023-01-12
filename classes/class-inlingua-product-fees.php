@@ -126,7 +126,7 @@ class InliguaProductFees {
             }
         }
 
-        if ( $this->product_contains_fee_data($item['id'])) {
+        if ($this->product_contains_fee_data($item['id'])) {
             $fee_data = [
                 'name'       => get_post_meta($item['id'], 'product-fee-name', true),
                 'amount'     => get_post_meta($item['id'], 'product-fee-amount', true),
@@ -150,9 +150,7 @@ class InliguaProductFees {
     public function get_fee_tax_class($tax_status, $tax_class) {
         $fee_tax_class = get_option('wcpf_fee_tax_class', '_no_tax');
 
-        if ( ! wc_tax_enabled()) {
-            return '_no_tax';
-        }
+        if ( ! wc_tax_enabled()) return '_no_tax';
 
         // Change fee tax settings to the product's tax settings.
         if ('inherit_product_tax' === $fee_tax_class) {
@@ -175,10 +173,6 @@ class InliguaProductFees {
     public function get_fees($cart) {
         $fees = [];
 
-        if ( $this->maybe_remove_fees_for_coupon($cart)) {
-            return $fees;
-        }
-
         foreach($cart->get_cart() as $cart_item => $item) {
 
             // Get the data we need from each product in the cart.
@@ -194,8 +188,8 @@ class InliguaProductFees {
 
             $fee = $this->get_fee_data($item_data);
 
-            if ( $fee ) {
-                $fee_id        = strtolower($fee['name']);
+            if ($fee) {
+                $fee_id = strtolower($fee['name']);
 
                 if (array_key_exists($fee_id, $fees) && 'combine' === get_option('wcpf_name_conflicts', 'combine')) {
                     $fees[$fee_id]['amount'] += $fee['amount'];
@@ -222,13 +216,10 @@ class InliguaProductFees {
     public function add_fees($cart) {
         $fees = $this->get_fees($cart);
 
-        if (empty($fees)) {
-            return;
-        }
+        if (empty($fees)) return;
 
         foreach ($fees as $fee) {
             $cart->add_fee($fee['name'], $fee['amount'], $fee['taxable'], $fee['tax_class']);
         }
     }
-
 }
