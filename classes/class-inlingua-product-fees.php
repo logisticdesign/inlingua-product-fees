@@ -142,31 +142,6 @@ class InliguaProductFees {
     }
 
     /**
-     * Check if fees should be removed due to a coupon.
-     *
-     * @param object $cart WC Cart object.
-     * @return bool True or false based on existance of coupon meta.
-     */
-    public function maybe_remove_fees_for_coupon($cart) {
-
-        if (version_compare(WC_VERSION, '3.0', '<')) {
-            return false;
-        }
-
-        // Look for a fee-removing coupon.
-        $cart_coupons = $cart->get_coupons();
-        if ( ! empty($cart_coupons)) {
-            foreach ($cart_coupons as $coupon) {
-                if ('yes' === $coupon->get_meta( 'wcpf_coupon_remove_fees')) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
-    /**
      * Get the fee's tax class.
      *
      * @param object $product WC Cart item object.
