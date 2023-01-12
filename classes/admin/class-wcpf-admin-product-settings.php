@@ -31,14 +31,7 @@ class WCPF_Admin_Product_Settings {
         add_action( 'admin_head', [$this, 'admin_css']);
     }
 
-    public function create_product_panel_tab() {
-        echo '<li class="fees_product_tab product_fee_options"><a href="#fees_product_data"><span>' . __('Product Fees', 'woocommerce-product-fees').'</span></a></li>';
-    }
-
-    public function product_settings_fields() {
-        echo '<div id="fees_product_data" class="fee_panel panel woocommerce_options_panel wc-metaboxes-wrapper">';
-        echo '<div class="options_group">';
-
+    protected function get_product_attributes() {
         $product = wc_get_product($GLOBALS['post_id']);
 
         $attributes = $product->get_attributes();
@@ -49,40 +42,99 @@ class WCPF_Admin_Product_Settings {
                 return ! $attribute_data['variation'];
             });
         }
+    }
 
-        // QUI FARE LOOP PER GENERARE CAMPI VARIABILI IN BASE AGLI ATTRIBUTI NON UTILIZZATI COME VARIAZIONE
+    public function create_product_panel_tab() {
+        echo '<li class="fees_product_tab product_fee_options"><a href="#fees_product_data"><span>' . __('Product Fees', 'woocommerce-product-fees').'</span></a></li>';
+    }
 
-        // Text Field - Fee Name
-        woocommerce_wp_text_input(['id' => 'product-fee-name', 'label' => __('Fee Name', 'woocommerce-product-fees'), 'data_type' => 'text', 'placeholder' => __('Product Fee', 'woocommerce-product-fees'), 'desc_tip' => 'true', 'description' => __('This will be shown at checkout descriping the added fee.', 'woocommerce-product-fees')]);
+    public function product_settings_fields() {
+        echo '<div id="fees_product_data" class="fee_panel panel woocommerce_options_panel wc-metaboxes-wrapper">';
 
-        // Text Field - Fee Amount
-        woocommerce_wp_text_input(['id' => 'product-fee-amount', 'label' => sprintf(__('Fee Amount (%s)', 'woocommerce-product-fees'), get_woocommerce_currency_symbol()), 'data_type' => 'price', 'placeholder' => __('Monetary Decimal or Percentage', 'woocommerce-product-fees'), 'desc_tip' => 'true', 'description' => __( 'Enter a monetary decimal without any currency symbols or thousand seperators. This field also accepts percentages.', 'woocommerce-product-fees')]);
+        $this->get_product_attributes();
+
+        foreach ($this->attributesNotVariation as $attribute) {
+            $attribute_data = $attribute->get_data();
+
+            echo '
+                <div>
+                <div class="toolbar toolbar-variations-defaults"><h4>' . wc_attribute_label($attribute_data['name']) . '</h4></div>
+            ';
+
+            foreach ($attribute_data['options'] as $option) {
+                echo '<div class="options_group">';
+
+                $term = get_term($option, $attribute_data['name']);
+
+                // Text Field - Fee Name
+                woocommerce_wp_text_input([
+                    'id' => 'product-fee-name-' . $term->slug,
+                    'label' =>  'Fee "' . $term->name . '"',
+                    'value' => $term->name,
+                    'data_type' => 'text',
+                    'placeholder' => __('Product Fee', 'woocommerce-product-fees'),
+                    'desc_tip' => 'true',
+                    'description' => __('This will be shown at checkout descriping the added fee.', 'woocommerce-product-fees')
+                ]);
+
+                // Text Field - Fee Amount
+                woocommerce_wp_text_input([
+                    'id' => 'product-fee-amount-' . $term->slug,
+                    'label' => sprintf(__('Fee Amount (%s)', 'woocommerce-product-fees'), get_woocommerce_currency_symbol()),
+                    'data_type' => 'price',
+                    'placeholder' => __('Monetary Decimal or Percentage', 'woocommerce-product-fees'),
+                    'desc_tip' => 'true',
+                    'description' => __( 'Enter a monetary decimal without any currency symbols or thousand seperators. This field also accepts percentages.', 'woocommerce-product-fees')
+                ]);
+
+                echo '</div>';
+            }
+
+            echo '</div>';
+        }
+
+        echo '<div class="options_group">';
 
         do_action('wcpf_add_product_settings_group_one');
 
-        echo '</div>';
-        echo '<div class="options_group">';
+        echo '
+            </div>
+            <div class="options_group">
+        ';
 
         // Check Box - Fee Multiply Option
         woocommerce_wp_checkbox(['id'=> 'product-fee-multiplier', 'label' => __('Multiply Fee by Quantity', 'woocommerce-product-fees'), 'desc_tip' => 'true', 'description' => __('Multiply the fee by the quanitity of this product that is added to the cart.', 'woocommerce-product-fees')]);
 
         do_action('wcpf_add_products_settings_group_two');
 
-        echo '</div>';
-        echo '</div>';
+        echo '
+            </div>
+            </div>
+        ';
     }
 
     public function save_product_settings_fields($post_id) {
-        // Note: Nonces are handled in WC core before this point.
+        $this->get_product_attributes();
 
-        foreach (['product-fee-name', 'product-fee-amount'] as $field) {
-            $field_value = isset($_POST[ $field]) ? sanitize_text_field($_POST[ $field]) : ''; // phpcs:ignore CSRF
+        foreach ($this->attributesNotVariation as $attribute) {
+            $attribute_data = $attribute->get_data();
 
-            if ($field_value !== get_post_meta($post_id, $field, true)) {
-                if ('' === $field_value) {
-                    delete_post_meta($post_id, $field);
-                } else {
-                    update_post_meta($post_id, $field, $field_value);
+            foreach ($attribute_data['options'] as $option) {
+                $term = get_term($option, $attribute_data['name']);
+
+                foreach ([
+                    'product-fee-name-' . $term->slug,
+                    'product-fee-amount-' . $term->slug
+                ] as $field) {
+                    $field_value = isset($_POST[$field]) ? sanitize_text_field($_POST[$field]) : ''; // phpcs:ignore CSRF
+
+                    if ($field_value !== get_post_meta($post_id, $field, true)) {
+                        if ('' === $field_value) {
+                            delete_post_meta($post_id, $field);
+                        } else {
+                            update_post_meta($post_id, $field, $field_value);
+                        }
+                    }
                 }
             }
         }
