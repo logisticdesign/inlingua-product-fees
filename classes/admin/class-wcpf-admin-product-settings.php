@@ -66,21 +66,10 @@ class WCPF_Admin_Product_Settings {
 
                 $term = get_term($option, $attribute_data['name']);
 
-                // Text Field - Fee Name
-                woocommerce_wp_text_input([
-                    'id' => 'product-fee-name-' . $term->slug,
-                    'label' =>  'Fee "' . $term->name . '"',
-                    'value' => $term->name,
-                    'data_type' => 'text',
-                    'placeholder' => __('Product Fee', 'woocommerce-product-fees'),
-                    'desc_tip' => 'true',
-                    'description' => __('This will be shown at checkout descriping the added fee.', 'woocommerce-product-fees')
-                ]);
-
                 // Text Field - Fee Amount
                 woocommerce_wp_text_input([
-                    'id' => 'product-fee-amount-' . $term->slug,
-                    'label' => sprintf(__('Fee Amount (%s)', 'woocommerce-product-fees'), get_woocommerce_currency_symbol()),
+                    'id' => "product-fee-{$attribute_data['name']}-{$term->slug}-amount",
+                    'label' => sprintf(__("{$term->name} Amount (%s)", 'woocommerce-product-fees'), get_woocommerce_currency_symbol()),
                     'data_type' => 'price',
                     'placeholder' => __('Monetary Decimal or Percentage', 'woocommerce-product-fees'),
                     'desc_tip' => 'true',
@@ -123,8 +112,7 @@ class WCPF_Admin_Product_Settings {
                 $term = get_term($option, $attribute_data['name']);
 
                 foreach ([
-                    'product-fee-name-' . $term->slug,
-                    'product-fee-amount-' . $term->slug
+                    "product-fee-{$attribute_data['name']}-{$term->slug}-amount"
                 ] as $field) {
                     $field_value = isset($_POST[$field]) ? sanitize_text_field($_POST[$field]) : ''; // phpcs:ignore CSRF
 
@@ -204,15 +192,15 @@ class WCPF_Admin_Product_Settings {
 
     public function admin_css() {
         echo "
-        <style type='text/css'>
-            #woocommerce-product-data ul.product_data_tabs li.product_fee_options a:before {
-                content: '\\e01e';
-                font-family: 'WooCommerce';
-            }
-            .product-fee-multiplier .checkbox {
-                margin: 3px 6px 0 0 !important;
-            }
-        </style>
+            <style type='text/css'>
+                #woocommerce-product-data ul.product_data_tabs li.product_fee_options a:before {
+                    content: '\\e01e';
+                    font-family: 'WooCommerce';
+                }
+                .product-fee-multiplier .checkbox {
+                    margin: 3px 6px 0 0 !important;
+                }
+            </style>
         ";
     }
 
