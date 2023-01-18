@@ -54,7 +54,7 @@ class InliguaProductFees {
                 $slug = $data['term']->slug;
                 $fee_name = "product-fee-$name-$slug-amount";
 
-                $fee_value = get_post_meta($item['product_id'], $fee_name, true) * 1;
+                $fee_value = str_replace(wc_get_price_decimal_separator(), '.', get_post_meta($item['product_id'], $fee_name, true)) * 1;
 
                 if ($multiply_for_quantity) {
                     $fee_value = $fee_value * $item['quantity'];
@@ -88,23 +88,6 @@ class InliguaProductFees {
         if ($cart->subtotal > $limit) {
             $cart->add_fee(__('Marca da bollo', 'inlingua'), $value, false);
         }
-    }
-
-    /**
-     * Check if a product contains fee data.
-     *
-     * @param int $id Product ID.
-     * @return bool True or false based on existance of custom meta.
-     */
-    public function product_contains_fee_data($id) {
-        $fee_name   = get_post_meta($id, 'product-fee-name', true);
-        $fee_amount = str_replace(wc_get_price_decimal_separator(), '.', get_post_meta($id, 'product-fee-amount', true));
-
-        if ( '' !== $fee_name && '' !== $fee_amount && $fee_amount > 0) {
-            return true;
-        }
-
-        return false;
     }
 
     /**
@@ -144,37 +127,6 @@ class InliguaProductFees {
     }
 
     /**
-     * Get the fee data from a product.
-     *
-     * @param array $item Cart item data.
-     * @return array $fee_data Fee data.
-     */
-    public function get_fee_data($item) {
-        $fee_data = false;
-
-        // Assign the variation's parent ID if no fee at the variation level.
-        if (0 !== $item['variation_id']) {
-            if (0 !== $item['variation_id'] && ! $this->product_contains_fee_data($item['id'])) {
-                $item['id'] = $item['parent_id'];
-            }
-        }
-
-        if ($this->product_contains_fee_data($item['id'])) {
-            $fee_data = [
-                'name'       => get_post_meta($item['id'], 'product-fee-name', true),
-                'amount'     => get_post_meta($item['id'], 'product-fee-amount', true),
-                'multiplier' => get_post_meta($item['id'], 'product-fee-multiplier', true),
-                'tax_class'  => $this->get_fee_tax_class($item['tax_status'], $item['tax_class'])
-            ];
-
-            $fee_data['amount'] = $this->make_percentage_adjustments($fee_data['amount'], $item['price']);
-            $fee_data['amount'] = $this->maybe_multiply_by_quantity($fee_data['amount'], $fee_data['multiplier'], $item['qty']);
-        }
-
-        return $fee_data;
-    }
-
-    /**
      * Get the fee's tax class.
      *
      * @param object $product WC Cart item object.
@@ -195,64 +147,5 @@ class InliguaProductFees {
         }
 
         return $fee_tax_class;
-    }
-
-    /**
-     * Get all the fees.
-     *
-     * @param object $cart WC Cart object.
-     * @return array $fees An array of fees to be added.
-     */
-    public function get_fees($cart) {
-        $fees = [];
-
-        foreach($cart->get_cart() as $cart_item => $item) {
-
-            // Get the data we need from each product in the cart.
-            $item_data = [
-                'id'           => $item['data']->get_id(),
-                'variation_id' => $item['variation_id'],
-                'parent_id'    => $item['data']->get_parent_id(),
-                'qty'          => $item['quantity'],
-                'price'        => $item['data']->get_price(),
-                'tax_status'   => $item['data']->get_tax_status(),
-                'tax_class'    => $item['data']->get_tax_class()
-            ];
-
-            $fee = $this->get_fee_data($item_data);
-
-            if ($fee) {
-                $fee_id = strtolower($fee['name']);
-
-                if (array_key_exists($fee_id, $fees) && 'combine' === get_option('wcpf_name_conflicts', 'combine')) {
-                    $fees[$fee_id]['amount'] += $fee['amount'];
-                } else {
-                    $fees[$fee_id] = apply_filters('wcpf_filter_fee_data', [
-                        'name'      => $fee['name'],
-                        'amount'    => $fee['amount'],
-                        'taxable'   => ('_no_tax' === $fee['tax_class']) ? false : true,
-                        'tax_class' => $fee['tax_class']
-                    ], $item_data);
-                }
-            }
-        }
-
-        return $fees;
-    }
-
-    /**
-     * Add the fees to the cart.
-     *
-     * @param object $cart WC Cart object.
-     * @return null
-     */
-    public function add_fees($cart) {
-        $fees = $this->get_fees($cart);
-
-        if (empty($fees)) return;
-
-        foreach ($fees as $fee) {
-            $cart->add_fee($fee['name'], $fee['amount'], $fee['taxable'], $fee['tax_class']);
-        }
     }
 }
