@@ -5,7 +5,6 @@
  * Creates global product settings, coupon options, and adds csv import support.
  *
  * @class 	WCPF_Admin_Global_Settings
- * @author 	Caleb Burks
  */
 
 // Exit if accessed directly
@@ -13,7 +12,8 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-class WCPF_Admin_Global_Settings {
+class WCPF_Admin_Global_Settings
+{
 
     public function __construct() {
         add_action('woocommerce_get_sections_general', [$this, 'add_general_section'], 10);

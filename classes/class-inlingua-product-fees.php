@@ -5,7 +5,6 @@
  * Add the fees at checkout.
  *
  * @class 	WooCommerce_Product_Fees
- * @author 	Caleb Burks
  */
 
 // Exit if accessed directly
@@ -19,7 +18,7 @@ class InliguaProductFees {
      * Constructor for the main product fees class.
      */
     public function __construct() {
-        if ( is_admin() ) {
+        if (is_admin()) {
             // Product & global settings
             require_once 'admin/class-wcpf-admin-product-settings.php';
             require_once 'admin/class-wcpf-admin-global-settings.php';
@@ -29,7 +28,8 @@ class InliguaProductFees {
         add_action('plugins_loaded', [$this, 'text_domain']);
 
         // Hook-in for fees to be added
-        add_action('woocommerce_cart_calculate_fees', [$this, 'add_tax_mark'], 15);
+        add_action('woocommerce_cart_calculate_fees', [$this, 'check_product_fees'], 15);
+        add_action('woocommerce_cart_calculate_fees', [$this, 'add_tax_mark'], 90);
     }
 
     /**
@@ -45,15 +45,48 @@ class InliguaProductFees {
      * @param object $cart WC Cart object.
      * @return null
      */
+    public function check_product_fees($cart) {
+        foreach ($cart->cart_contents as $item) {
+            $custom_data = $item['custom_data'];
+            $multiply_for_quantity = get_post_meta($item['product_id'], 'product-fee-multiplier', true) === 'yes';
+
+            foreach($custom_data as $name => $data) {
+                $slug = $data['term']->slug;
+                $fee_name = "product-fee-$name-$slug-amount";
+
+                $fee_value = get_post_meta($item['product_id'], $fee_name, true) * 1;
+
+                if ($multiply_for_quantity) {
+                    $fee_value = $fee_value * $item['quantity'];
+                };
+
+                $cart_fee_name = <<< HTML
+                    <div class="cart-fee-name">
+                        <span class="cart-fee-name-title">{$item['data']->get_name()}:</span>
+                        <span class="cart-fee-name-description">{$data['label']} - {$data['term']->name}</span>
+                    </div>
+                HTML;
+
+                $cart->add_fee($cart_fee_name, $fee_value, false);
+            }
+        }
+    }
+
+    /**
+     * Add tax mark fee.
+     *
+     * @param object $cart WC Cart object.
+     * @return null
+     */
     public function add_tax_mark($cart) {
         if (! function_exists('get_field')) return;
 
         $globals = get_field('marca_da_bollo', 'options');
         $limit = $globals['soglia'];
-        $valore = $globals['valore'];
+        $value = $globals['valore'];
 
         if ($cart->subtotal > $limit) {
-            $cart->add_fee(__('Marca da bollo', 'inlingua'), $valore, false);
+            $cart->add_fee(__('Marca da bollo', 'inlingua'), $value, false);
         }
     }
 

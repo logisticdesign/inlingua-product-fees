@@ -19,8 +19,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 add_action('plugins_loaded', 'wc_inligua_fees_load_after_plugins_loaded');
 
 function wc_inligua_fees_load_after_plugins_loaded() {
-	if ( ! class_exists( "Inlingua_Product_Fees" ) && class_exists( 'WooCommerce' ) ) {
-		require_once( 'classes/class-inlingua-product-fees.php' );
+	if ( ! class_exists('Inlingua_Product_Fees') && class_exists('WooCommerce')) {
+		require_once('classes/class-inlingua-product-fees.php');
+		require_once('helpers.php');
+
 		new InliguaProductFees;
 	}
 }

@@ -5,7 +5,6 @@
  * Create the product and variation settings.
  *
  * @class 	WCPF_Admin_Product_Settings
- * @author 	Caleb Burks
  */
 
 // Exit if accessed directly
@@ -13,8 +12,8 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-class WCPF_Admin_Product_Settings {
-
+class WCPF_Admin_Product_Settings
+{
     protected $attributesNotVariation;
 
     public function __construct() {
@@ -31,19 +30,6 @@ class WCPF_Admin_Product_Settings {
         add_action( 'admin_head', [$this, 'admin_css']);
     }
 
-    protected function get_product_attributes() {
-        $product = wc_get_product($GLOBALS['post_id']);
-
-        $attributes = $product->get_attributes();
-
-        if (count($attributes)) {
-            $this->attributesNotVariation = array_filter($attributes, function($attribute) {
-                $attribute_data = $attribute->get_data();
-                return ! $attribute_data['variation'];
-            });
-        }
-    }
-
     public function create_product_panel_tab() {
         echo '<li class="fees_product_tab product_fee_options"><a href="#fees_product_data"><span>' . __('Product Fees', 'woocommerce-product-fees').'</span></a></li>';
     }
@@ -51,7 +37,7 @@ class WCPF_Admin_Product_Settings {
     public function product_settings_fields() {
         echo '<div id="fees_product_data" class="fee_panel panel woocommerce_options_panel wc-metaboxes-wrapper">';
 
-        $this->get_product_attributes();
+        $this->attributesNotVariation = get_product_attributes_not_for_variation($GLOBALS['post_id']);
 
         foreach ($this->attributesNotVariation as $attribute) {
             $attribute_data = $attribute->get_data();
@@ -103,7 +89,7 @@ class WCPF_Admin_Product_Settings {
     }
 
     public function save_product_settings_fields($post_id) {
-        $this->get_product_attributes();
+        $this->attributesNotVariation = get_product_attributes_not_for_variation($post_id);
 
         foreach ($this->attributesNotVariation as $attribute) {
             $attribute_data = $attribute->get_data();
@@ -127,7 +113,7 @@ class WCPF_Admin_Product_Settings {
             }
         }
 
-        $product_fee_multiplier_checkbox = isset( $_POST['product-fee-multiplier'] ) ? 'yes' : ''; // phpcs:ignore CSRF
+        $product_fee_multiplier_checkbox = isset($_POST['product-fee-multiplier']) ? 'yes' : ''; // phpcs:ignore CSRF
 
         if ($product_fee_multiplier_checkbox !== get_post_meta($post_id, 'product-fee-multiplier', true)) {
             if ( '' === $product_fee_multiplier_checkbox ) {
