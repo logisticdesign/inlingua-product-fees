@@ -124,58 +124,6 @@ class WCPF_Admin_Product_Settings
         }
     }
 
-    public function variation_settings_fields($loop, $variation_data, $variation) {
-        // Set placeholders based on global product level fees.
-        $parent_id = $variation->post_parent;
-
-        if ( get_post_meta($parent_id, 'product-fee-name', true) !== '' && get_post_meta($parent_id, 'product-fee-amount', true) !== '') {
-            $placeholders = [
-                'name'   => get_post_meta($parent_id, 'product-fee-name', true),
-                'amount' => get_post_meta($parent_id, 'product-fee-amount', true)
-            ];
-        } else {
-            $placeholders = [
-                'name'   => __('Product Fee', 'woocommerce-product-fees'),
-                'amount' => __('Monetary Decimal or Percentage', 'woocommerce-product-fees'),
-            ];
-        }
-
-        // Text Field - Fee Name
-        woocommerce_wp_text_input(['id' => 'product-fee-name[' . $variation->ID . ']', 'label' => __('Fee Name', 'woocommerce-product-fees'), 'data_type' => 'text', 'placeholder' => $placeholders['name'], 'value' => get_post_meta($variation->ID, 'product-fee-name', true ), 'wrapper_class' => "form-row form-row-first"]);
-
-        // Text Field - Fee Amount
-        woocommerce_wp_text_input(['id' => 'product-fee-amount[' . $variation->ID . ']', 'label' => __('Fee Amount', 'woocommerce-product-fees') . ' (' . get_woocommerce_currency_symbol() . ')', 'data_type' => 'price', 'placeholder' => $placeholders['amount'], 'value' => get_post_meta($variation->ID, 'product-fee-amount', true ), 'wrapper_class' => "form-row form-row-last"]);
-
-        // Check Box - Fee Multiply Option
-        woocommerce_wp_checkbox(['id'=> 'product-fee-multiplier[' . $variation->ID . ']', 'label' => __('Multiply Fee by Quantity', 'woocommerce-product-fees'), 'value' => get_post_meta($variation->ID, 'product-fee-multiplier', true), 'wrapper_class' => "product-fee-multiplier"]);
-
-        do_action( 'wcpf_add_variation_settings' );
-    }
-
-    public function save_variation_settings_fields($post_id) {
-        // Note: Nonces are handled in WC core before this point.
-
-        foreach (['product-fee-name', 'product-fee-amount'] as $field) {
-            $field_value = isset( $_POST[ $field ][ $post_id ] ) ? sanitize_text_field($_POST[$field][$post_id]) : ''; // phpcs:ignore CSRF
-            if ( $field_value !== get_post_meta($post_id, $field, true)) {
-                if ( '' === $field_value) {
-                    delete_post_meta($post_id, $field);
-                } else {
-                    update_post_meta($post_id, $field, $field_value);
-                }
-            }
-        }
-
-        $product_fee_multiplier_checkbox = isset($_POST['product-fee-multiplier'][ $post_id ]) ? 'yes' : ''; // phpcs:ignore CSRF
-        if ( $product_fee_multiplier_checkbox !== get_post_meta($post_id, 'product-fee-multiplier', true)) {
-            if ( '' === $product_fee_multiplier_checkbox) {
-                delete_post_meta($post_id, 'product-fee-multiplier');
-            } else {
-                update_post_meta($post_id, 'product-fee-multiplier', $product_fee_multiplier_checkbox);
-            }
-        }
-    }
-
     public function admin_css() {
         echo "
             <style type='text/css'>
