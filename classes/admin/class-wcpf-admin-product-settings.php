@@ -137,7 +137,6 @@ class WCPF_Admin_Product_Settings
             </style>
         ";
     }
-
 }
 
 return new WCPF_Admin_Product_Settings();

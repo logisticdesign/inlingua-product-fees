@@ -47,30 +47,29 @@ class InliguaProductFees {
      */
     public function check_product_fees($cart) {
         foreach ($cart->cart_contents as $item) {
-            $custom_data = $item['custom_data'];
-            $multiply_for_quantity = get_post_meta($item['product_id'], 'product-fee-multiplier', true) === 'yes';
+            if (array_key_exists('custom_data', $item)) {
+                $custom_data = $item['custom_data'];
+                $multiply_for_quantity = get_post_meta($item['product_id'], 'product-fee-multiplier', true) === 'yes';
 
-            foreach($custom_data as $name => $data) {
-                $slug = $data['term']->slug;
-                $fee_name = "product-fee-$name-$slug-amount";
+                foreach($custom_data as $name => $data) {
+                    $slug = $data['term']->slug;
+                    $fee_name = "product-fee-$name-$slug-amount";
 
-                $fee_value = get_post_meta($item['product_id'], $fee_name, true);
+                    $fee_value = get_post_meta($item['product_id'], $fee_name, true);
 
-                if ($fee_value) {
-                    $fee_value = str_replace(wc_get_price_decimal_separator(), '.', $fee_value) * 1;
+                    if ($fee_value) {
+                        $fee_value = $this->make_percentage_adjustments($fee_value, $item['data']->get_price());
+                        $fee_value = $this->maybe_multiply_by_quantity($fee_value, $multiply_for_quantity, $item['quantity']);
 
-                    if ($multiply_for_quantity) {
-                        $fee_value = $fee_value * $item['quantity'];
-                    };
+                        $cart_fee_name = <<< HTML
+                            <div class="cart-fee-name">
+                                <span class="cart-fee-name-title">{$item['data']->get_name()}:</span>
+                                <span class="cart-fee-name-description">{$data['label']} - {$data['term']->name}</span>
+                            </div>
+                        HTML;
 
-                    $cart_fee_name = <<< HTML
-                        <div class="cart-fee-name">
-                            <span class="cart-fee-name-title">{$item['data']->get_name()}:</span>
-                            <span class="cart-fee-name-description">{$data['label']} - {$data['term']->name}</span>
-                        </div>
-                    HTML;
-
-                    $cart->add_fee($cart_fee_name, $fee_value, false);
+                        $cart->add_fee($cart_fee_name, $fee_value, false);
+                    }
                 }
             }
         }
@@ -123,7 +122,7 @@ class InliguaProductFees {
      */
     public function maybe_multiply_by_quantity($amount, $multiplier, $qty) {
         // Multiply the fee by the quantity if needed.
-        if ( 'yes' === $multiplier ) {
+        if ($multiplier) {
             $amount = $qty * $amount;
         }
 
