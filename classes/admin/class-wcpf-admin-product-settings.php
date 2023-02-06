@@ -22,10 +22,6 @@ class WCPF_Admin_Product_Settings
         add_action('woocommerce_product_data_panels', [$this, 'product_settings_fields']);
         add_action('woocommerce_process_product_meta', [$this, 'save_product_settings_fields']);
 
-        // Add and save variation settings.
-        add_action( 'woocommerce_product_after_variable_attributes', [$this, 'variation_settings_fields'], 10, 3);
-        add_action( 'woocommerce_save_product_variation', [$this, 'save_variation_settings_fields'], 10, 2);
-
         // CSS
         add_action( 'admin_head', [$this, 'admin_css']);
     }
@@ -35,9 +31,13 @@ class WCPF_Admin_Product_Settings
     }
 
     public function product_settings_fields() {
+        $post_id = $GLOBALS['post_id'];
+
+        if ( ! $post_id) return false;
+
         echo '<div id="fees_product_data" class="fee_panel panel woocommerce_options_panel wc-metaboxes-wrapper">';
 
-        $this->attributesNotVariation = get_product_attributes_not_for_variation($GLOBALS['post_id']);
+        $this->attributesNotVariation = get_product_attributes_not_for_variation($post_id);
 
         foreach ($this->attributesNotVariation as $attribute) {
             $attribute_data = $attribute->get_data();
